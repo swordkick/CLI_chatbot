@@ -95,6 +95,7 @@ python main.py models list
 | `/export [name]` | Export conversation as Markdown to `exports/` |
 | `/multiline` | Toggle multiline input mode (blank line to submit) |
 | `/retry` | Regenerate the last assistant response |
+| `/undo` | Remove the last user + assistant message pair |
 
 ## Supported Models
 
