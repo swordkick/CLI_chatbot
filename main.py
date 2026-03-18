@@ -47,6 +47,7 @@ HELP_TEXT = """\
   /export [name]     Export conversation as Markdown to exports/
   /multiline         Toggle multiline input mode (submit with blank line)
   /retry             Regenerate the last assistant response
+  /undo              Remove the last user + assistant message pair
   /help              Show this help message
 """
 
@@ -428,8 +429,23 @@ def chat(
 
         # Slash commands
         if user_input.startswith("/"):
-            # Handle /retry directly — needs chat loop context
-            if user_input.strip().lower() == "/retry":
+            # Handle /retry and /undo directly — need chat loop context
+            if user_input.strip().lower() == "/undo":
+                # Remove last assistant + user pair
+                removed = 0
+                if history and history[-1]["role"] == "assistant":
+                    history.pop()
+                    removed += 1
+                if history and history[-1]["role"] == "user":
+                    history.pop()
+                    removed += 1
+                if removed == 0:
+                    console.print("[yellow]Nothing to undo.[/yellow]")
+                else:
+                    turns = len([m for m in history if m["role"] == "user"])
+                    console.print(f"[dim]Undone. {turns} turn(s) remaining.[/dim]")
+                continue
+            elif user_input.strip().lower() == "/retry":
                 # Drop last assistant message to re-generate
                 if not history or history[-1]["role"] != "assistant":
                     console.print("[yellow]Nothing to retry — no previous response.[/yellow]")
@@ -454,7 +470,7 @@ def chat(
                 continue
 
         # Build message with optional RAG context (skip if retrying — history already has the user msg)
-        if not user_input.strip().lower() == "/retry":
+        if user_input.strip().lower() != "/retry":
             user_content = user_input
             num_chunks = 0
             if use_rag and rag is not None:
