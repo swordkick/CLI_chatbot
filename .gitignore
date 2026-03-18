@@ -1,6 +1,7 @@
 .env
 .rag_store/
 histories/
+exports/
 __pycache__/
 *.pyc
 *.pyo

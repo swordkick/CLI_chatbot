@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 HISTORIES_DIR = Path("histories")
+EXPORTS_DIR = Path("exports")
 
 import click
 from rich.console import Console
@@ -42,6 +44,7 @@ HELP_TEXT = """\
   /history save <name>  Save conversation to histories/<name>.json
   /history load <name>  Load conversation from histories/<name>.json
   /history list         List saved conversations
+  /export [name]     Export conversation as Markdown to exports/
   /help              Show this help message
 """
 
@@ -281,6 +284,34 @@ def handle_slash_command(
             return True, use_rag, None, None
 
         console.print("[red]Unknown /history sub-command. Try: save, load, list[/red]")
+        return True, use_rag, None, None
+
+    if cmd == "/export":
+        if not history:
+            console.print("[yellow]Nothing to export — conversation is empty.[/yellow]")
+            return True, use_rag, None, None
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        name = parts[1].strip() if len(parts) > 1 else timestamp
+        EXPORTS_DIR.mkdir(exist_ok=True)
+        dest = EXPORTS_DIR / f"{name}.md"
+        lines = [
+            f"# Chat Export — {model_name}",
+            f"*Exported: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*",
+            "",
+        ]
+        role_labels = {"system": "⚙️ System", "user": "**You**", "assistant": f"**{model_name}**"}
+        for msg in history:
+            role = msg.get("role", "unknown")
+            content = msg.get("content", "")
+            label = role_labels.get(role, role.capitalize())
+            lines.append(f"### {label}")
+            lines.append("")
+            lines.append(content)
+            lines.append("")
+            lines.append("---")
+            lines.append("")
+        dest.write_text("\n".join(lines), encoding="utf-8")
+        console.print(f"[green]Exported {len(history)} messages to [bold]{escape(str(dest))}[/bold].[/green]")
         return True, use_rag, None, None
 
     console.print(f"[red]Unknown command: {escape(cmd)}. Type /help for help.[/red]")
