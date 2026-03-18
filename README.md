@@ -88,6 +88,9 @@ python main.py models list
 | `/rag status` | Show RAG store stats |
 | `/model` | Show current model info |
 | `/model <name>` | Switch to a different model mid-chat |
+| `/history save <name>` | Save conversation to `histories/<name>.json` |
+| `/history load <name>` | Load a saved conversation |
+| `/history list` | List all saved conversations |
 
 ## Supported Models
 
