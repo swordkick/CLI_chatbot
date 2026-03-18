@@ -108,8 +108,10 @@ python main.py models list
 ## Response Footer
 
 After each response, a dim status line shows:
-- **Token counts**: `tokens: 37 in / 404 out / 441 total`
-- **RAG chunks** (when enabled): `RAG: 2 chunk(s) | tokens: 512 in / 210 out / 722 total`
+- **Token counts + speed**: `tokens: 37 in / 404 out / 441 total @ 26.2 tok/s`
+- **RAG chunks** (when enabled): `RAG: 2 chunk(s) | tokens: 512 in / 210 out / 722 total @ 24.5 tok/s`
+
+Speed is measured using Ollama's internal `eval_duration` for accuracy.
 
 ## RAG Pipeline
 
