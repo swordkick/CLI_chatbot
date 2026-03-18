@@ -96,6 +96,7 @@ python main.py models list
 | `/multiline` | Toggle multiline input mode (blank line to submit) |
 | `/retry` | Regenerate the last assistant response |
 | `/undo` | Remove the last user + assistant message pair |
+| `/stats` | Show conversation statistics (turns, words, model info) |
 
 ## Supported Models
 
