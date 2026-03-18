@@ -92,6 +92,7 @@ python main.py models list
 | `/history save <name>` | Save conversation to `histories/<name>.json` |
 | `/history load <name>` | Load a saved conversation |
 | `/history list` | List all saved conversations |
+| `/export [name]` | Export conversation as Markdown to `exports/` |
 
 ## Supported Models
 
