@@ -35,6 +35,7 @@ HELP_TEXT = """\
   /rag add <path>    Index a file or directory
   /rag status        Show RAG store statistics
   /model             Show current model info
+  /model <name>      Switch to a different model
   /help              Show this help message
 """
 
@@ -117,34 +118,52 @@ def handle_slash_command(
     backend_name: str,
     rag: RAGEngine | None,
     use_rag: bool,
-) -> tuple[bool, bool, str | None]:
+    manager: ModelManager,
+) -> tuple[bool, bool, str | None, str | None]:
     """
     Process a /command.
-    Returns (should_continue, use_rag, new_system_prompt).
-    new_system_prompt is None if unchanged.
+    Returns (should_continue, use_rag, new_system_prompt, new_model).
+    None values mean unchanged.
     """
     parts = line.strip().split(None, 2)
     cmd = parts[0].lower()
 
     if cmd == "/quit":
         console.print("[dim]Goodbye.[/dim]")
-        return False, use_rag, None
+        return False, use_rag, None, None
 
     if cmd == "/clear":
         history.clear()
         console.print("[dim]Conversation history cleared.[/dim]")
-        return True, use_rag, None
+        return True, use_rag, None, None
 
     if cmd == "/model":
-        console.print(
-            f"[bold]Model:[/bold] {escape(model_name)}  "
-            f"[bold]Backend:[/bold] {escape(backend_name)}"
-        )
-        return True, use_rag, None
+        if len(parts) < 2:
+            # Show current model info
+            console.print(
+                f"[bold]Model:[/bold] {escape(model_name)}  "
+                f"[bold]Backend:[/bold] {escape(backend_name)}"
+            )
+            return True, use_rag, None, None
+        # Switch model
+        new_model = parts[1].strip()
+        try:
+            available = manager.list_models()
+        except RuntimeError as exc:
+            console.print(f"[red]{escape(str(exc))}[/red]")
+            return True, use_rag, None, None
+        if backend_name == "ollama" and new_model not in available:
+            console.print(
+                f"[red]Model [bold]{escape(new_model)}[/bold] is not installed. "
+                f"Run `python main.py models pull {escape(new_model)}` first.[/red]"
+            )
+            return True, use_rag, None, None
+        console.print(f"[green]Switched to model [bold]{escape(new_model)}[/bold].[/green]")
+        return True, use_rag, None, new_model
 
     if cmd == "/help":
         console.print(Panel(HELP_TEXT, border_style="dim"))
-        return True, use_rag, None
+        return True, use_rag, None, None
 
     if cmd == "/system":
         if len(parts) < 2:
@@ -154,7 +173,7 @@ def handle_slash_command(
                 console.print(f"[bold]System prompt:[/bold] {escape(sys_msg)}")
             else:
                 console.print("[dim]No system prompt set.[/dim]")
-            return True, use_rag, None
+            return True, use_rag, None, None
         new_prompt = line.strip()[len("/system"):].strip()
         # Replace existing system message or prepend a new one
         for msg in history:
@@ -164,12 +183,12 @@ def handle_slash_command(
         else:
             history.insert(0, {"role": "system", "content": new_prompt})
         console.print(f"[green]System prompt updated.[/green]")
-        return True, use_rag, new_prompt
+        return True, use_rag, new_prompt, None
 
     if cmd == "/rag":
         if rag is None:
             console.print("[red]RAG is not enabled. Start chat with --rag flag.[/red]")
-            return True, use_rag, None
+            return True, use_rag, None, None
 
         sub = parts[1].lower() if len(parts) > 1 else ""
 
@@ -181,12 +200,12 @@ def handle_slash_command(
             )
             for src in stats["sources"]:
                 console.print(f"  [dim]{escape(src)}[/dim]")
-            return True, use_rag, None
+            return True, use_rag, None, None
 
         if sub == "add":
             if len(parts) < 3:
                 console.print("[red]Usage: /rag add <path>[/red]")
-                return True, use_rag, None
+                return True, use_rag, None, None
             target = Path(parts[2].strip()).expanduser()
             with console.status(f"[cyan]Indexing {escape(str(target))}…[/cyan]"):
                 try:
@@ -200,13 +219,13 @@ def handle_slash_command(
                     use_rag = True
                 except Exception as exc:
                     console.print(f"[red]Error: {escape(str(exc))}[/red]")
-            return True, use_rag, None
+            return True, use_rag, None, None
 
         console.print("[red]Unknown /rag sub-command. Try: /rag add <path>, /rag status[/red]")
-        return True, use_rag, None
+        return True, use_rag, None, None
 
     console.print(f"[red]Unknown command: {escape(cmd)}. Type /help for help.[/red]")
-    return True, use_rag, None
+    return True, use_rag, None, None
 
 
 # ---------------------------------------------------------------------------
@@ -293,11 +312,13 @@ def chat(
 
         # Slash commands
         if user_input.startswith("/"):
-            should_continue, use_rag, _ = handle_slash_command(
-                user_input, history, model, backend, rag, use_rag
+            should_continue, use_rag, _, new_model = handle_slash_command(
+                user_input, history, model, backend, rag, use_rag, manager
             )
             if not should_continue:
                 break
+            if new_model:
+                model = new_model
             # Re-create RAG engine if it was just enabled via /rag add
             if use_rag and rag is None:
                 rag = RAGEngine()
