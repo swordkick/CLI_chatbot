@@ -111,6 +111,7 @@ python main.py models list
 | `deepseek-r1:7b` | Ollama | DeepSeek R1 7B |
 | `grok-2-1212` | xAI API | Grok 2 (cloud) |
 | `llama-3.3-70b-versatile` | Groq API | LLaMA 70B via Groq |
+| `phi4:14b` | Ollama | Microsoft Phi-4 14B |
 
 ## Response Footer
 

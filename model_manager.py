@@ -21,6 +21,7 @@ MODEL_CATALOG: list[dict] = [
     {"name": "deepseek-r1:7b",   "backend": "ollama", "description": "DeepSeek R1 7B"},
     {"name": "grok-2-1212",      "backend": "api/xai",  "description": "Grok 2 (cloud)"},
     {"name": "llama-3.3-70b-versatile", "backend": "api/groq", "description": "LLaMA 70B via Groq"},
+    {"name": "phi4:14b",                "backend": "ollama", "description": "Microsoft Phi-4 14B"},
 ]
 
 # Known context window sizes (tokens) — keyed by model name prefix
@@ -37,6 +38,7 @@ MODEL_CONTEXT_SIZES: dict[str, int] = {
     "grok-2-1212":              131072,
     "llama-3.3-70b-versatile":  131072,
     "mistral:latest":           32768,
+    "phi4:14b":                 16384,
 }
 
 # ---------------------------------------------------------------------------
