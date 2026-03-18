@@ -31,27 +31,37 @@ console = Console()
 BANNER = """[bold cyan]LLM CLI Chatbot[/bold cyan]  [dim]with RAG support[/dim]
 Type [bold]/help[/bold] for commands, [bold]/quit[/bold] to exit."""
 
-HELP_TEXT = """\
-[bold]Slash commands:[/bold]
-  /quit              Exit the chatbot
-  /clear             Clear conversation history
-  /clear rag         Clear the RAG document store
-  /system <prompt>   Set a new system prompt
-  /system            Show current system prompt
-  /rag add <path>    Index a file or directory
-  /rag status        Show RAG store statistics
-  /model             Show current model info
-  /model <name>      Switch to a different model
-  /history save <name>  Save conversation to histories/<name>.json
-  /history load <name>  Load conversation from histories/<name>.json
-  /history list         List saved conversations
-  /export [name]     Export conversation as Markdown to exports/
-  /multiline         Toggle multiline input mode (submit with blank line)
-  /retry             Regenerate the last assistant response
-  /undo              Remove the last user + assistant message pair
-  /stats             Show conversation statistics
-  /help              Show this help message
-"""
+HELP_COMMANDS = [
+    # (command, description, example)
+    ("/quit",                  "Exit the chatbot",                          ""),
+    ("/clear",                 "Clear conversation history",                ""),
+    ("/clear rag",             "Clear the RAG document store",              ""),
+    ("/system <prompt>",       "Set a new system prompt",                   "/system You are a concise assistant."),
+    ("/system",                "Show current system prompt",                ""),
+    ("/model",                 "Show current model info",                   ""),
+    ("/model <name>",          "Switch model mid-chat",                     "/model deepseek-r1:7b"),
+    ("/rag add <path>",        "Index a file or directory",                 "/rag add ./docs/"),
+    ("/rag status",            "Show RAG store statistics",                 ""),
+    ("/history save <name>",   "Save conversation to histories/",           "/history save my_session"),
+    ("/history load <name>",   "Load a saved conversation",                 "/history load my_session"),
+    ("/history list",          "List all saved conversations",              ""),
+    ("/export [name]",         "Export chat as Markdown to exports/",       "/export meeting_notes"),
+    ("/multiline",             "Toggle multiline input (blank line sends)", ""),
+    ("/retry",                 "Regenerate the last assistant response",    ""),
+    ("/undo",                  "Remove last user + assistant message pair", ""),
+    ("/stats",                 "Show conversation statistics",              ""),
+    ("/help",                  "Show this help message",                    ""),
+]
+
+
+def print_help() -> None:
+    table = Table(title="Slash Commands", header_style="bold magenta", show_lines=False)
+    table.add_column("Command",     style="cyan",  no_wrap=True, min_width=22)
+    table.add_column("Description", style="white", no_wrap=True)
+    table.add_column("Example",     style="dim",   no_wrap=True)
+    for cmd, desc, example in HELP_COMMANDS:
+        table.add_row(cmd, desc, example)
+    console.print(table)
 
 
 def print_banner() -> None:
@@ -184,7 +194,7 @@ def handle_slash_command(
         return True, use_rag, None, new_model
 
     if cmd == "/help":
-        console.print(Panel(HELP_TEXT, border_style="dim"))
+        print_help()
         return True, use_rag, None, None
 
     if cmd == "/system":
