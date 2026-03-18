@@ -29,10 +29,10 @@ It runs models locally via Ollama and supports TXT and Markdown documents.
 - `/model` — Show current model info
 
 ## RAG Pipeline
-Documents are chunked into 500-word segments with 50-word overlap.
+Documents are chunked into 100-word segments with 20-word overlap.
 Embeddings are generated using the `all-MiniLM-L6-v2` model from sentence-transformers.
 Vectors are stored in ChromaDB under the `.rag_store/` directory.
-Only chunks with cosine similarity above 0.3 are injected as context.
+Only chunks with cosine similarity above 0.2 are injected as context.
 
 ## API Backend
 Set environment variables in `.env` to use cloud models:
