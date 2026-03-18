@@ -8,6 +8,7 @@ A local LLM chatbot that runs in your terminal with Retrieval-Augmented Generati
 - **Cloud API** support via xAI (Grok) and Groq
 - **RAG pipeline** — index TXT/Markdown docs and get context-aware answers
 - **Streaming responses** with a clean Rich terminal UI
+- **Token count** displayed after each response (prompt / completion / total)
 - **Slash commands** for in-chat control
 
 ## Requirements
@@ -103,6 +104,12 @@ python main.py models list
 | `deepseek-r1:7b` | Ollama | DeepSeek R1 7B |
 | `grok-2-1212` | xAI API | Grok 2 (cloud) |
 | `llama-3.3-70b-versatile` | Groq API | LLaMA 70B via Groq |
+
+## Response Footer
+
+After each response, a dim status line shows:
+- **Token counts**: `tokens: 37 in / 404 out / 441 total`
+- **RAG chunks** (when enabled): `RAG: 2 chunk(s) | tokens: 512 in / 210 out / 722 total`
 
 ## RAG Pipeline
 
