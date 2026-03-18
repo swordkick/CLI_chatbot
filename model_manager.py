@@ -67,22 +67,35 @@ class OllamaBackend:
                     if isinstance(chunk, dict):
                         prompt_tokens = chunk.get("prompt_eval_count", 0) or 0
                         completion_tokens = chunk.get("eval_count", 0) or 0
+                        eval_duration_ns = chunk.get("eval_duration", 0) or 0
                     else:
                         prompt_tokens = getattr(chunk, "prompt_eval_count", 0) or 0
                         completion_tokens = getattr(chunk, "eval_count", 0) or 0
-                    yield {"__tokens__": True, "prompt": prompt_tokens, "completion": completion_tokens}
+                        eval_duration_ns = getattr(chunk, "eval_duration", 0) or 0
+                    tokens_per_sec = (
+                        completion_tokens / (eval_duration_ns / 1e9)
+                        if eval_duration_ns > 0 else 0.0
+                    )
+                    yield {"__tokens__": True, "prompt": prompt_tokens,
+                           "completion": completion_tokens, "tokens_per_sec": tokens_per_sec}
         else:
             response = self._ollama.chat(model=model, messages=messages, stream=False)
             if isinstance(response, dict):
                 yield response.get("message", {}).get("content", "")
+                eval_duration_ns = response.get("eval_duration", 0) or 0
+                completion_tokens = response.get("eval_count", 0) or 0
                 yield {"__tokens__": True,
                        "prompt": response.get("prompt_eval_count", 0) or 0,
-                       "completion": response.get("eval_count", 0) or 0}
+                       "completion": completion_tokens,
+                       "tokens_per_sec": completion_tokens / (eval_duration_ns / 1e9) if eval_duration_ns > 0 else 0.0}
             else:
                 yield getattr(getattr(response, "message", None), "content", "") or ""
+                eval_duration_ns = getattr(response, "eval_duration", 0) or 0
+                completion_tokens = getattr(response, "eval_count", 0) or 0
                 yield {"__tokens__": True,
                        "prompt": getattr(response, "prompt_eval_count", 0) or 0,
-                       "completion": getattr(response, "eval_count", 0) or 0}
+                       "completion": completion_tokens,
+                       "tokens_per_sec": completion_tokens / (eval_duration_ns / 1e9) if eval_duration_ns > 0 else 0.0}
 
 
 # ---------------------------------------------------------------------------

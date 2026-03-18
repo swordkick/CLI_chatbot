@@ -416,9 +416,11 @@ def chat(
         if num_chunks > 0:
             dim_parts.append(f"RAG: {num_chunks} chunk(s)")
         if token_stats:
+            tps = token_stats.get("tokens_per_sec", 0.0)
+            tps_str = f" @ {tps:.1f} tok/s" if tps > 0 else ""
             dim_parts.append(
-                f"tokens: {token_stats['prompt']} in / {token_stats['completion']} out "
-                f"/ {token_stats['prompt'] + token_stats['completion']} total"
+                f"tokens: {token_stats['prompt']} in / {token_stats['completion']} out"
+                f" / {token_stats['prompt'] + token_stats['completion']} total{tps_str}"
             )
         if dim_parts:
             console.print(f"[dim]  ({' | '.join(dim_parts)})[/dim]")
