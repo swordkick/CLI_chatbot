@@ -19,7 +19,7 @@ from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn
 from rich.table import Table
 from rich.text import Text
 
-from model_manager import MODEL_CATALOG, ModelManager
+from model_manager import MODEL_CATALOG, MODEL_CONTEXT_SIZES, ModelManager
 from rag_engine import RAGEngine
 
 console = Console()
@@ -50,6 +50,7 @@ HELP_COMMANDS = [
     ("/retry",                 "Regenerate the last assistant response",    ""),
     ("/undo",                  "Remove last user + assistant message pair", ""),
     ("/stats",                 "Show conversation statistics",              ""),
+    ("/context",               "Show context window usage estimate",        ""),
     ("/help",                  "Show this help message",                    ""),
 ]
 
@@ -337,6 +338,30 @@ def handle_slash_command(
     if cmd == "/multiline":
         # Toggled externally via the chat loop; signal via a special return value
         return True, use_rag, "__toggle_multiline__", None
+
+    if cmd == "/context":
+        # Estimate token usage: ~4 chars per token heuristic
+        total_chars = sum(len(m["content"]) for m in history)
+        estimated_tokens = total_chars // 4
+        ctx_size = MODEL_CONTEXT_SIZES.get(model_name, 0)
+
+        table = Table(title="Context Window Usage", header_style="bold magenta", show_header=False)
+        table.add_column("Stat", style="bold")
+        table.add_column("Value", style="cyan")
+        table.add_row("Model", escape(model_name))
+        table.add_row("Messages in history", str(len(history)))
+        table.add_row("Estimated tokens used", f"{estimated_tokens:,}")
+        if ctx_size:
+            pct = estimated_tokens / ctx_size * 100
+            bar_filled = int(pct / 5)  # 20-char bar
+            bar = "█" * bar_filled + "░" * (20 - bar_filled)
+            table.add_row("Context window size", f"{ctx_size:,}")
+            table.add_row("Usage", f"{bar} {pct:.1f}%")
+            table.add_row("Tokens remaining", f"{max(0, ctx_size - estimated_tokens):,}")
+        else:
+            table.add_row("Context window size", "[dim]unknown[/dim]")
+        console.print(table)
+        return True, use_rag, None, None
 
     if cmd == "/export":
         if not history:

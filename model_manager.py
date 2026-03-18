@@ -23,6 +23,22 @@ MODEL_CATALOG: list[dict] = [
     {"name": "llama-3.3-70b-versatile", "backend": "api/groq", "description": "LLaMA 70B via Groq"},
 ]
 
+# Known context window sizes (tokens) — keyed by model name prefix
+MODEL_CONTEXT_SIZES: dict[str, int] = {
+    "qwen2.5:7b":               32768,
+    "qwen2.5:14b":              32768,
+    "llama3.2:3b":              131072,
+    "llama3.2:latest":          131072,
+    "llama3.1:8b":              131072,
+    "llama3.1:latest":          131072,
+    "llama3.3:latest":          131072,
+    "llama2:latest":            4096,
+    "deepseek-r1:7b":           65536,
+    "grok-2-1212":              131072,
+    "llama-3.3-70b-versatile":  131072,
+    "mistral:latest":           32768,
+}
+
 # ---------------------------------------------------------------------------
 # Ollama backend
 # ---------------------------------------------------------------------------
