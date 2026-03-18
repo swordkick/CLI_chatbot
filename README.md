@@ -93,6 +93,7 @@ python main.py models list
 | `/history load <name>` | Load a saved conversation |
 | `/history list` | List all saved conversations |
 | `/export [name]` | Export conversation as Markdown to `exports/` |
+| `/multiline` | Toggle multiline input mode (blank line to submit) |
 
 ## Supported Models
 
