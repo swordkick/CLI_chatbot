@@ -83,6 +83,7 @@ python main.py models list
 | `/help` | Show help |
 | `/quit` | Exit |
 | `/clear` | Clear conversation history |
+| `/clear rag` | Clear the RAG document store mid-chat |
 | `/system <prompt>` | Set a new system prompt mid-chat |
 | `/system` | Show the current system prompt |
 | `/rag add <path>` | Index a document while chatting |
