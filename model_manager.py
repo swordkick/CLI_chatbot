@@ -22,6 +22,7 @@ MODEL_CATALOG: list[dict] = [
     {"name": "grok-2-1212",      "backend": "api/xai",  "description": "Grok 2 (cloud)"},
     {"name": "llama-3.3-70b-versatile", "backend": "api/groq", "description": "LLaMA 70B via Groq"},
     {"name": "phi4:14b",                "backend": "ollama", "description": "Microsoft Phi-4 14B"},
+    {"name": "gemma3:4b",               "backend": "ollama", "description": "Google Gemma 3 4B"},
 ]
 
 # Known context window sizes (tokens) — keyed by model name prefix
@@ -39,6 +40,7 @@ MODEL_CONTEXT_SIZES: dict[str, int] = {
     "llama-3.3-70b-versatile":  131072,
     "mistral:latest":           32768,
     "phi4:14b":                 16384,
+    "gemma3:4b":                131072,
 }
 
 # ---------------------------------------------------------------------------
