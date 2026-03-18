@@ -46,6 +46,7 @@ HELP_TEXT = """\
   /history list         List saved conversations
   /export [name]     Export conversation as Markdown to exports/
   /multiline         Toggle multiline input mode (submit with blank line)
+  /retry             Regenerate the last assistant response
   /help              Show this help message
 """
 
@@ -427,31 +428,42 @@ def chat(
 
         # Slash commands
         if user_input.startswith("/"):
-            should_continue, use_rag, sys_or_signal, new_model = handle_slash_command(
-                user_input, history, model, backend, rag, use_rag, manager
-            )
-            if not should_continue:
-                break
-            if sys_or_signal == "__toggle_multiline__":
-                multiline_mode = not multiline_mode
-                state = "[green]ON[/green]" if multiline_mode else "[yellow]OFF[/yellow]"
-                console.print(f"[dim]Multiline mode: {state}. {'Submit with a blank line.' if multiline_mode else ''}[/dim]")
-            if new_model:
-                model = new_model
-            # Re-create RAG engine if it was just enabled via /rag add
-            if use_rag and rag is None:
-                rag = RAGEngine()
-            continue
+            # Handle /retry directly — needs chat loop context
+            if user_input.strip().lower() == "/retry":
+                # Drop last assistant message to re-generate
+                if not history or history[-1]["role"] != "assistant":
+                    console.print("[yellow]Nothing to retry — no previous response.[/yellow]")
+                    continue
+                history.pop()
+                console.print("[dim]Retrying…[/dim]")
+            else:
+                should_continue, use_rag, sys_or_signal, new_model = handle_slash_command(
+                    user_input, history, model, backend, rag, use_rag, manager
+                )
+                if not should_continue:
+                    break
+                if sys_or_signal == "__toggle_multiline__":
+                    multiline_mode = not multiline_mode
+                    state = "[green]ON[/green]" if multiline_mode else "[yellow]OFF[/yellow]"
+                    console.print(f"[dim]Multiline mode: {state}. {'Submit with a blank line.' if multiline_mode else ''}[/dim]")
+                if new_model:
+                    model = new_model
+                # Re-create RAG engine if it was just enabled via /rag add
+                if use_rag and rag is None:
+                    rag = RAGEngine()
+                continue
 
-        # Build message with optional RAG context
-        user_content = user_input
-        num_chunks = 0
-        if use_rag and rag is not None:
-            context, num_chunks = rag.build_context(user_input)
-            if context:
-                user_content = f"{context}\n\nUser question: {user_input}"
-
-        history.append({"role": "user", "content": user_content})
+        # Build message with optional RAG context (skip if retrying — history already has the user msg)
+        if not user_input.strip().lower() == "/retry":
+            user_content = user_input
+            num_chunks = 0
+            if use_rag and rag is not None:
+                context, num_chunks = rag.build_context(user_input)
+                if context:
+                    user_content = f"{context}\n\nUser question: {user_input}"
+            history.append({"role": "user", "content": user_content})
+        else:
+            num_chunks = 0
 
         # Generate response
         console.print("[bold green]Assistant:[/bold green] ", end="")
@@ -467,7 +479,8 @@ def chat(
             console.print()  # newline after stream
         except Exception as exc:
             console.print(f"\n[red]Error generating response: {escape(str(exc))}[/red]")
-            history.pop()  # remove failed user message
+            if history and history[-1]["role"] == "user":
+                history.pop()  # remove failed user message
             continue
 
         history.append({"role": "assistant", "content": full_response})
