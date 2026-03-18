@@ -48,6 +48,7 @@ HELP_TEXT = """\
   /multiline         Toggle multiline input mode (submit with blank line)
   /retry             Regenerate the last assistant response
   /undo              Remove the last user + assistant message pair
+  /stats             Show conversation statistics
   /help              Show this help message
 """
 
@@ -287,6 +288,31 @@ def handle_slash_command(
             return True, use_rag, None, None
 
         console.print("[red]Unknown /history sub-command. Try: save, load, list[/red]")
+        return True, use_rag, None, None
+
+    if cmd == "/stats":
+        user_msgs   = [m for m in history if m["role"] == "user"]
+        asst_msgs   = [m for m in history if m["role"] == "assistant"]
+        sys_msgs    = [m for m in history if m["role"] == "system"]
+        total_chars = sum(len(m["content"]) for m in history)
+        user_words  = sum(len(m["content"].split()) for m in user_msgs)
+        asst_words  = sum(len(m["content"].split()) for m in asst_msgs)
+        avg_asst    = (asst_words // len(asst_msgs)) if asst_msgs else 0
+
+        table = Table(title="Conversation Statistics", header_style="bold magenta", show_header=False)
+        table.add_column("Stat", style="bold")
+        table.add_column("Value", style="cyan")
+        table.add_row("Turns",              str(len(user_msgs)))
+        table.add_row("User messages",      str(len(user_msgs)))
+        table.add_row("Assistant messages", str(len(asst_msgs)))
+        table.add_row("System messages",    str(len(sys_msgs)))
+        table.add_row("User words",         str(user_words))
+        table.add_row("Assistant words",    str(asst_words))
+        table.add_row("Avg assistant words",str(avg_asst))
+        table.add_row("Total characters",   str(total_chars))
+        table.add_row("Model",              escape(model_name))
+        table.add_row("Backend",            escape(backend_name))
+        console.print(table)
         return True, use_rag, None, None
 
     if cmd == "/multiline":
