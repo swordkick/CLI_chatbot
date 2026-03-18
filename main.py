@@ -35,6 +35,7 @@ HELP_TEXT = """\
 [bold]Slash commands:[/bold]
   /quit              Exit the chatbot
   /clear             Clear conversation history
+  /clear rag         Clear the RAG document store
   /system <prompt>   Set a new system prompt
   /system            Show current system prompt
   /rag add <path>    Index a file or directory
@@ -146,8 +147,16 @@ def handle_slash_command(
         return False, use_rag, None, None
 
     if cmd == "/clear":
-        history.clear()
-        console.print("[dim]Conversation history cleared.[/dim]")
+        sub = parts[1].lower() if len(parts) > 1 else ""
+        if sub == "rag":
+            if rag is None:
+                console.print("[red]RAG is not enabled. Start chat with --rag flag.[/red]")
+            else:
+                rag.clear()
+                console.print("[green]RAG store cleared.[/green]")
+        else:
+            history.clear()
+            console.print("[dim]Conversation history cleared.[/dim]")
         return True, use_rag, None, None
 
     if cmd == "/model":
