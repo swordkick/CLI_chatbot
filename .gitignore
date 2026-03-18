@@ -1,5 +1,6 @@
 .env
 .rag_store/
+histories/
 __pycache__/
 *.pyc
 *.pyo

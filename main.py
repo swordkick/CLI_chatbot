@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from typing import Optional
+
+HISTORIES_DIR = Path("histories")
 
 import click
 from rich.console import Console
@@ -36,6 +39,9 @@ HELP_TEXT = """\
   /rag status        Show RAG store statistics
   /model             Show current model info
   /model <name>      Switch to a different model
+  /history save <name>  Save conversation to histories/<name>.json
+  /history load <name>  Load conversation from histories/<name>.json
+  /history list         List saved conversations
   /help              Show this help message
 """
 
@@ -222,6 +228,59 @@ def handle_slash_command(
             return True, use_rag, None, None
 
         console.print("[red]Unknown /rag sub-command. Try: /rag add <path>, /rag status[/red]")
+        return True, use_rag, None, None
+
+    if cmd == "/history":
+        sub = parts[1].lower() if len(parts) > 1 else ""
+
+        if sub == "list":
+            HISTORIES_DIR.mkdir(exist_ok=True)
+            files = sorted(HISTORIES_DIR.glob("*.json"))
+            if not files:
+                console.print("[dim]No saved conversations.[/dim]")
+            else:
+                table = Table(title="Saved Conversations", header_style="bold magenta")
+                table.add_column("Name", style="cyan")
+                table.add_column("Messages", style="dim")
+                for f in files:
+                    try:
+                        msgs = json.loads(f.read_text())
+                        table.add_row(f.stem, str(len(msgs)))
+                    except Exception:
+                        table.add_row(f.stem, "[red]error[/red]")
+                console.print(table)
+            return True, use_rag, None, None
+
+        if sub == "save":
+            if len(parts) < 3:
+                console.print("[red]Usage: /history save <name>[/red]")
+                return True, use_rag, None, None
+            name = parts[2].strip()
+            HISTORIES_DIR.mkdir(exist_ok=True)
+            dest = HISTORIES_DIR / f"{name}.json"
+            dest.write_text(json.dumps(history, indent=2, ensure_ascii=False))
+            console.print(f"[green]Saved {len(history)} messages to [bold]{escape(str(dest))}[/bold].[/green]")
+            return True, use_rag, None, None
+
+        if sub == "load":
+            if len(parts) < 3:
+                console.print("[red]Usage: /history load <name>[/red]")
+                return True, use_rag, None, None
+            name = parts[2].strip()
+            src = HISTORIES_DIR / f"{name}.json"
+            if not src.exists():
+                console.print(f"[red]File not found: {escape(str(src))}[/red]")
+                return True, use_rag, None, None
+            try:
+                loaded = json.loads(src.read_text())
+                history.clear()
+                history.extend(loaded)
+                console.print(f"[green]Loaded {len(history)} messages from [bold]{escape(str(src))}[/bold].[/green]")
+            except Exception as exc:
+                console.print(f"[red]Failed to load: {escape(str(exc))}[/red]")
+            return True, use_rag, None, None
+
+        console.print("[red]Unknown /history sub-command. Try: save, load, list[/red]")
         return True, use_rag, None, None
 
     console.print(f"[red]Unknown command: {escape(cmd)}. Type /help for help.[/red]")
