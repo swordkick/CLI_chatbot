@@ -87,6 +87,7 @@ python main.py models list
 | `/rag add <path>` | Index a document while chatting |
 | `/rag status` | Show RAG store stats |
 | `/model` | Show current model info |
+| `/model <name>` | Switch to a different model mid-chat |
 
 ## Supported Models
 
