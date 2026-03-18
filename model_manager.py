@@ -51,22 +51,38 @@ class OllamaBackend:
                        "completed": getattr(chunk, "completed", 0),
                        "total": getattr(chunk, "total", 0)}
 
-    def generate(self, messages: list[dict], model: str, stream: bool = True) -> Iterator[str]:
-        """Yield streamed text tokens from a chat completion."""
+    def generate(self, messages: list[dict], model: str, stream: bool = True) -> Iterator[str | dict]:
+        """Yield streamed text tokens, then a final stats dict with token counts."""
         if stream:
             for chunk in self._ollama.chat(model=model, messages=messages, stream=True):
                 if isinstance(chunk, dict):
                     content = chunk.get("message", {}).get("content", "")
+                    done = chunk.get("done", False)
                 else:
                     content = getattr(getattr(chunk, "message", None), "content", "") or ""
+                    done = getattr(chunk, "done", False)
                 if content:
                     yield content
+                if done:
+                    if isinstance(chunk, dict):
+                        prompt_tokens = chunk.get("prompt_eval_count", 0) or 0
+                        completion_tokens = chunk.get("eval_count", 0) or 0
+                    else:
+                        prompt_tokens = getattr(chunk, "prompt_eval_count", 0) or 0
+                        completion_tokens = getattr(chunk, "eval_count", 0) or 0
+                    yield {"__tokens__": True, "prompt": prompt_tokens, "completion": completion_tokens}
         else:
             response = self._ollama.chat(model=model, messages=messages, stream=False)
             if isinstance(response, dict):
                 yield response.get("message", {}).get("content", "")
+                yield {"__tokens__": True,
+                       "prompt": response.get("prompt_eval_count", 0) or 0,
+                       "completion": response.get("eval_count", 0) or 0}
             else:
                 yield getattr(getattr(response, "message", None), "content", "") or ""
+                yield {"__tokens__": True,
+                       "prompt": getattr(response, "prompt_eval_count", 0) or 0,
+                       "completion": getattr(response, "eval_count", 0) or 0}
 
 
 # ---------------------------------------------------------------------------

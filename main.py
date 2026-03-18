@@ -396,10 +396,14 @@ def chat(
         # Generate response
         console.print("[bold green]Assistant:[/bold green] ", end="")
         full_response = ""
+        token_stats: dict = {}
         try:
             for token in manager.generate(history, model=model, stream=True):
-                console.print(token, end="", markup=False)
-                full_response += token
+                if isinstance(token, dict) and token.get("__tokens__"):
+                    token_stats = token
+                else:
+                    console.print(token, end="", markup=False)
+                    full_response += token
             console.print()  # newline after stream
         except Exception as exc:
             console.print(f"\n[red]Error generating response: {escape(str(exc))}[/red]")
@@ -408,8 +412,16 @@ def chat(
 
         history.append({"role": "assistant", "content": full_response})
 
+        dim_parts = []
         if num_chunks > 0:
-            console.print(f"[dim]  (RAG: {num_chunks} relevant chunk(s) used)[/dim]")
+            dim_parts.append(f"RAG: {num_chunks} chunk(s)")
+        if token_stats:
+            dim_parts.append(
+                f"tokens: {token_stats['prompt']} in / {token_stats['completion']} out "
+                f"/ {token_stats['prompt'] + token_stats['completion']} total"
+            )
+        if dim_parts:
+            console.print(f"[dim]  ({' | '.join(dim_parts)})[/dim]")
 
 
 # ---------- models ---------------------------------------------------------
