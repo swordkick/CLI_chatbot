@@ -45,6 +45,7 @@ HELP_TEXT = """\
   /history load <name>  Load conversation from histories/<name>.json
   /history list         List saved conversations
   /export [name]     Export conversation as Markdown to exports/
+  /multiline         Toggle multiline input mode (submit with blank line)
   /help              Show this help message
 """
 
@@ -286,6 +287,10 @@ def handle_slash_command(
         console.print("[red]Unknown /history sub-command. Try: save, load, list[/red]")
         return True, use_rag, None, None
 
+    if cmd == "/multiline":
+        # Toggled externally via the chat loop; signal via a special return value
+        return True, use_rag, "__toggle_multiline__", None
+
     if cmd == "/export":
         if not history:
             console.print("[yellow]Nothing to export — conversation is empty.[/yellow]")
@@ -385,6 +390,7 @@ def chat(
 
     rag = RAGEngine() if use_rag else None
     history: list[dict] = []
+    multiline_mode = False
 
     if system:
         history.append({"role": "system", "content": system})
@@ -392,7 +398,26 @@ def chat(
     # ---- conversation loop ------------------------------------------------
     while True:
         try:
-            user_input = console.input("[bold blue]You:[/bold blue] ").strip()
+            if multiline_mode:
+                prompt = "[bold blue]You (multiline)[/bold blue] [dim]↵ blank line to send[/dim]\n"
+                console.print(prompt, end="")
+                lines = []
+                while True:
+                    line = console.input("[dim]...[/dim] ")
+                    if line == "" and lines:
+                        break
+                    if line.startswith("/"):
+                        # Allow slash commands even in multiline mode
+                        user_input = line
+                        lines = None
+                        break
+                    lines.append(line)
+                if lines is None:
+                    pass  # fall through to slash command handling below
+                else:
+                    user_input = "\n".join(lines)
+            else:
+                user_input = console.input("[bold blue]You:[/bold blue] ").strip()
         except (EOFError, KeyboardInterrupt):
             console.print("\n[dim]Interrupted. Goodbye.[/dim]")
             break
@@ -402,11 +427,15 @@ def chat(
 
         # Slash commands
         if user_input.startswith("/"):
-            should_continue, use_rag, _, new_model = handle_slash_command(
+            should_continue, use_rag, sys_or_signal, new_model = handle_slash_command(
                 user_input, history, model, backend, rag, use_rag, manager
             )
             if not should_continue:
                 break
+            if sys_or_signal == "__toggle_multiline__":
+                multiline_mode = not multiline_mode
+                state = "[green]ON[/green]" if multiline_mode else "[yellow]OFF[/yellow]"
+                console.print(f"[dim]Multiline mode: {state}. {'Submit with a blank line.' if multiline_mode else ''}[/dim]")
             if new_model:
                 model = new_model
             # Re-create RAG engine if it was just enabled via /rag add
