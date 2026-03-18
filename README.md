@@ -98,6 +98,7 @@ python main.py models list
 | `/retry` | Regenerate the last assistant response |
 | `/undo` | Remove the last user + assistant message pair |
 | `/stats` | Show conversation statistics (turns, words, model info) |
+| `/context` | Show context window usage estimate (tokens used / remaining) |
 
 ## Supported Models
 
